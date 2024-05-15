@@ -428,7 +428,7 @@ struct ContentView: View {
         if cell.initialFlag {
             return "\(cell.opeType.rawValue)"
         }
-        return "\(cell.opeType.rawValue)"+cell.value
+        return "\(cell.opeType.rawValue)"+formatF(f:Float(cell.value)!)
     }
     //Floatのフォーマット
     private func formatF(f: Float) -> String {
@@ -437,10 +437,10 @@ struct ContentView: View {
             if f == 0{
                 return "0"
             }
-            else if f > Float(i) {
+            else if f > Float(i) { //小数
                 return String(f)
-            } else {
-                return String(i)
+            } else {    //整数
+                return String.localizedStringWithFormat("%d", i)
             }
         } else {    //inf,nan
             return String(f)
