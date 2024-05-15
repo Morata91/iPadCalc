@@ -5,13 +5,13 @@
 //  Created by 村田航希 on 2024/05/13.
 //
 //つぎやる
-//リファクタリング
+//AC
 //UIをもうちょいマシに
 
 import SwiftUI
 import SwiftData
 
-let ROW = 10  // ROWの値を修正
+let ROW = 12  // ROWの値を修正
 let COL = 4  // `Cells`の数
 
 
@@ -59,14 +59,14 @@ struct ContentView: View {
         case subtract = "-"
         case multiply = "×"
         case divide = "÷"
-        case none = "none"
+        case none = ""
     }
     
     //セルの定義と初期化
     struct Cell: Identifiable, Hashable {
         let id: Int
         var opeType: Operation = .none
-        var value: Float = 0
+        var value: String = "0"
         var initialFlag: Bool = true
     }
     struct Cells: Identifiable, Hashable {
@@ -77,7 +77,7 @@ struct ContentView: View {
     @State var table = (0..<COL).map { index in
         Cells(
             id: index,
-            cell: ((index * 100)...(index * 100 + ROW)).map { Cell(id: $0) }
+            cell: ((index * 100)..<(index * 100 + ROW)).map { Cell(id: $0) }
         )
     }
     @State private var cellSelecter: Int?
@@ -90,103 +90,145 @@ struct ContentView: View {
         var nilValue: Bool
     }
     @State var input = Input(value: "0", currentOperation: .none, ableDecimal: true, nilValue: true)
+    
+    
+    //ダミー
+    struct Dummy: Identifiable {
+        let id = UUID()
+        let value: String
+    }
+    @State var dummy = (0..<5).map { index in
+        Dummy(value: String(index))
+    }
+    @State private var dummySelecter: UUID?
+    
+    
+    @State private var doCalc: Bool = false
 
     
 
     var body: some View {
         
-        NavigationSplitView(
-            columnVisibility: $columnVisibility,
-            sidebar: {
-                Text("ww")
-            },
-                            
-            detail: {
-                HStack(
-                    alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/,
-                    spacing: 10,
-                    content: {
-                        HStack(
-                            alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/,
-                            content: {
-                                ForEach(table, id: \.self) { column in
-                                    VStack(
-                                        alignment: .center,
-                                        content: {
-                                            Text(String(column.result))
-                                            
-                                            List (column.cell, selection: $cellSelecter){
-                                                Text(String($0.opeType.rawValue)+"\t\t\t"+String($0.value))
-                                            }
-                                            
+        
+            NavigationSplitView(
+                columnVisibility: $columnVisibility,
+                sidebar: {
+                    List(dummy, selection: $dummySelecter) { a in
+                        Text(a.value)
+                                }
+                },
+                detail: {
+                    HStack(
+                        alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/,
+                        spacing: 10,
+                        content: {
+                            HStack(
+                                alignment: /*@START_MENU_TOKEN@*/.center/*@END_MENU_TOKEN@*/,
+                                content: {
+                                    ForEach(table, id: \.self) { column in
+                                        ZStack {
+                                            Color(red: 0.2, green: 0.33, blue: 0.95, opacity: 1.0)
+                                            VStack(
+                                                alignment: .center,
+                                                content: {
+                                                    Spacer()
+                                                    HStack(
+                                                        content: {
+                                                        Spacer()
+                                                        Text(
+//                                                            String(column.result)
+                                                            formatF(f: column.result)
+                                                        )
+                                                        .frame(height: 40)
+                                                        }
+                                                    )
+                                                    .background(Color.white)
+                                                    .frame(maxWidth: 200)
+                                                    List (selection: $cellSelecter){
+                                                        ForEach(column.cell) { c in
+                                                            HStack {
+                                                                Text("")
+                                                                Spacer()
+    //                                                            Text(String(c.opeType.rawValue)+"\t\t"+String(c.value))
+                                                                Text(dispCell(cell: c))
+                                                            }
+                                                            .frame(minHeight: 30)
+                                                        }
+                                                    }
+                                                    .listStyle(.plain)
+                                                    .frame(maxWidth: 200)
+                                                    Button(
+                                                        action: {allClear(colnum: column.id)},
+                                                        label: {Text("AC")}
+                                                    )
+                                                    .buttonStyle(BorderedRoundedButtonStyle())
+                                                    Spacer()
+                                                }
+                                                
+                                                
+                                            )
                                         }
-                                        
-                                        
-                                    )
-                                }
-                                
-                                
-                                
-                            }
-                        )
-                            
-                        //ボタン領域
-                        VStack {
-                            Text("Cell")
-                            Text("Selected: "+String(cellSelecter ?? 0))
-                            Text("Input")
-                            Text("Value: "+self.input.value)
-                            Text("operation:  "+self.input.currentOperation.rawValue)
-                            Text("ableDecimal:  "+String(self.input.ableDecimal))
-                            ForEach(buttons, id: \.self) { row in
-                                HStack(spacing: 12) {
-                                    ForEach(row, id: \.self) { item in
-                                        Button(action: {
-                                            didTap(button: item)
-                                        }, label: {
-                                            Text(item.rawValue)
-                                        })
                                     }
+                                    
+                                    
+                                    
                                 }
-                                .padding(.bottom, 3)
+                            )
+                            .frame(maxHeight: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
+                                
+                            //ボタン領域
+                            VStack {
+    //                            Text("Cell")
+    //                            Text("Selected: "+String(cellSelecter ?? 0))
+    //                            Text("Input")
+    //                            Text("Value: "+self.input.value)
+    //                            Text("operation:  "+self.input.currentOperation.rawValue)
+    //                            Text("ableDecimal:  "+String(self.input.ableDecimal))
+                                ForEach(buttons, id: \.self) { row in
+                                    HStack(spacing: 12) {
+                                        ForEach(row, id: \.self) { item in
+                                            Button(action: {
+                                                didTap(button: item)
+                                            }, label: {
+                                                Text(item.rawValue)
+                                            })
+                                        }
+                                    }
+                                    .padding(.bottom, 3)
+                                }
                             }
+                            .buttonStyle(BorderedRoundedButtonStyle())
                         }
-                        .buttonStyle(BorderedRoundedButtonStyle())
+                    )
+                    .navigationBarTitleDisplayMode(.inline)
+//                    .navigationBarTitle("kkk")
+                    .toolbar {
+                        ToolbarItem(placement: .principal, content: {principalIcon()})
                     }
-                )
-            }
-        )
-        .onChange(of: cellSelecter) { oldState, newState in
-            changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
-            let colSelecter = (oldState ?? 400) / 100  //選択されているセルの列を取得。none->4
-            if colSelecter != 4 {
-                if let index = self.table[colSelecter].cell.firstIndex(where: {$0.id == oldState}) {
-                    if self.table[colSelecter].cell[index].initialFlag {
-                        self.table[colSelecter].cell[index].opeType = .none
+//                    .toolbar(Visibility.hidden, for: .navigationBar)
+                    
+                }
+            )
+//            .border(Color.red, width: 10)
+            .onChange(of: cellSelecter) { oldState, newState in
+                changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
+                let colSelecter = (oldState ?? 400) / 100  //選択されているセルの列を取得。none->4
+                if colSelecter != 4 {
+                    if let index = self.table[colSelecter].cell.firstIndex(where: {$0.id == oldState}) {
+                        if self.table[colSelecter].cell[index].initialFlag {
+                            self.table[colSelecter].cell[index].opeType = .none
+                        }
+                        if self.table[colSelecter].cell[index].opeType == .add {
+                            self.table[colSelecter].cell[index].opeType = .none
+                        }
                     }
                 }
-            }
-            
-            //Resultを計算
-            
-            for col in self.table {
-                var result: Float = 0
-                for c in col.cell {
-                    switch c.opeType{
-                    case .add:
-                        result = result + c.value
-                    case .subtract:
-                        result = result - c.value
-                    case .multiply:
-                        result = result * c.value
-                    case .divide:
-                        result = result / c.value
-                    default:
-                        break
-                    }
+                
+                //Resultを計算
+                if doCalc {
+                    calculate()
                 }
-                self.table[col.id].result = result
-            }
+        
         }
     }
 
@@ -201,12 +243,14 @@ struct ContentView: View {
             case .add:
                 if self.input.nilValue {    //まだ値がnoneの時に+を押すと、operationは+に設定される
                     changeInput(currentOperation: .add)
-                    currentCellChange(opeType: .add, value: 0, initialFlag: true)
+                    currentCellChange(opeType: .add, value: "0", initialFlag: true)
                 } else {    //値がある時に+を押すと、
+                    doCalc = false
                     
                     changeInput(value: "0", currentOperation: .add, ableDecimal: true, nilValue: true)
                     upCountCellSelecter()   //次のセルに移る
-                    currentCellChange(opeType: .add)    //移動後のセルのoperationを+に
+                    calculate()
+                    currentCellChange(opeType: self.input.currentOperation, value: "0", initialFlag: true)
                     
                 }
                 
@@ -214,60 +258,76 @@ struct ContentView: View {
             case .subtract:
                 if self.input.nilValue {    //まだ値がnoneの時に+を押すと、operationは+に設定される
                     changeInput(currentOperation: .subtract)
-                    currentCellChange(opeType: .subtract, value: 0, initialFlag: true)
+                    currentCellChange(opeType: .subtract, value: "0", initialFlag: true)
                 } else {    //値がある時に+を押すと、
+                    doCalc = false
                     
                     changeInput(value: "0", currentOperation: .subtract, ableDecimal: true, nilValue: true)
                     upCountCellSelecter()   //次のセルに移る
-                    currentCellChange(opeType: .subtract)    //移動後のセルのoperationを+に
+                    calculate()
+                    currentCellChange(opeType: self.input.currentOperation, value: "0", initialFlag: true)
                     
                 }
             case .multiply:
                 if self.input.nilValue {    //まだ値がnoneの時に+を押すと、operationは+に設定される
                     changeInput(currentOperation: .multiply)
-                    currentCellChange(opeType: .multiply, value: 0, initialFlag: true)
+                    currentCellChange(opeType: .multiply, value: "0", initialFlag: true)
                 } else {    //値がある時に+を押すと、
+                    doCalc = false
                     
                     changeInput(value: "0", currentOperation: .multiply, ableDecimal: true, nilValue: true)
                     upCountCellSelecter()   //次のセルに移る
-                    currentCellChange(opeType: .multiply)    //移動後のセルのoperationを+に
+                    calculate()
+                    currentCellChange(opeType: self.input.currentOperation, value: "0", initialFlag: true)
                     
                 }
                 
             case .divide:
                 if self.input.nilValue {    //まだ値がnoneの時に+を押すと、operationは+に設定される
                     changeInput(currentOperation: .divide)
-                    currentCellChange(opeType: .divide, value: 0, initialFlag: true)
+                    currentCellChange(opeType: .divide, value: "0", initialFlag: true)
                 } else {    //値がある時に+を押すと、
-                    
+                    doCalc = false
                     changeInput(value: "0", currentOperation: .divide, ableDecimal: true, nilValue: true)
                     upCountCellSelecter()   //次のセルに移る
-                    currentCellChange(opeType: .divide)    //移動後のセルのoperationを+に
+                    calculate()
+                    currentCellChange(opeType: self.input.currentOperation, value: "0", initialFlag: true)
                     
                 }
                 
             case .equal:
+                doCalc = true
                 
                 changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
                 upCountCellSelecter(change: false)
+                
             case .clear:
                 changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
-                currentCellChange(opeType: Optional.none, value: 0, initialFlag: true)
-//            case .decimal:
-//                break
+                currentCellChange(opeType: ContentView.Operation.none, value: "0", initialFlag: true)
+                calculate()
+            case .decimal:
+                doCalc = true
+                if !self.input.ableDecimal{
+                    break
+                }
+                changeInput(ableDecimal: false)
+                if self.input.currentOperation == .none {
+                    changeInput(currentOperation: .add)
+                    
+                }
+                changeInput(value: "\(self.input.value)\(button.rawValue)")
+                currentCellChange(value: self.input.value, initialFlag: false)
             default:    //数字or小数点
+                doCalc = true
                 changeInput(nilValue: false)
                 
                 if button == .decimal {
-                    if !self.input.ableDecimal{
-                        break
-                    }
-                    changeInput(ableDecimal: false)
+                    
                 }
-                //数字が押された時に、operation=noneだったら、+にする
+                //数字が押された時に、operation=noneだったら、+にする(Inputのみ)
                 if self.input.currentOperation == .none {
                     changeInput(currentOperation: .add)
-                    currentCellChange(opeType: .add)
+//                    currentCellChange(opeType: .add)
                     
                 }
                 let number = button.rawValue
@@ -277,7 +337,7 @@ struct ContentView: View {
                 else {
                     changeInput(value: "\(self.input.value)\(number)")
                 }
-                currentCellChange(value: Float(self.input.value), initialFlag: false)
+                currentCellChange(value: self.input.value, initialFlag: false)
                 
                 
                 
@@ -293,22 +353,33 @@ struct ContentView: View {
             if self.table[colSelecter].cell.firstIndex(where: {$0.id == cellSelecter + 1}) != nil {
                 //cellSelecter+=1できるならば
                 self.cellSelecter = cellSelecter + 1
+                print("カウントアｐｐ")
                 if change {
-                    currentCellChange(opeType: self.input.currentOperation, value: 0, initialFlag: true)
+                    
                 }
             }
         }
     }
     //選択されているセルの中身を変更
-    private func currentCellChange(opeType: Operation? = nil, value: Float? = nil, initialFlag: Bool? = nil) {
-        let colSelecter = (self.cellSelecter ?? 400) / 100  //選択されているセルの列を取得。none->4
+    //cellIDを指定すると、指定したセルを変更できる
+    private func currentCellChange(opeType: Operation? = nil, value: String? = nil, initialFlag: Bool? = nil, cellID: Int? = nil) {
+        let cS: Int
+        
+        if cellID != nil {
+            cS = cellID ?? 400
+        } else {
+            cS = self.cellSelecter ?? 400
+            
+        }
+        let colSelecter = cS / 100
+          //選択されているセルの列を取得。none->4
         if colSelecter != 4 {
-            if let index = self.table[colSelecter].cell.firstIndex(where: {$0.id == self.cellSelecter}) {
+            if let index = self.table[colSelecter].cell.firstIndex(where: {$0.id == cS}) {
                 if let a = opeType {
                     self.table[colSelecter].cell[index].opeType = a
                 }
                 if let b = value {
-                    self.table[colSelecter].cell[index].value = Float(b)
+                    self.table[colSelecter].cell[index].value = b
                 }
                 if let c = initialFlag {
                     self.table[colSelecter].cell[index].initialFlag = c
@@ -333,7 +404,70 @@ struct ContentView: View {
         }
         
     }
+    //AC
+    private func allClear(colnum: Int) {
+        for i in colnum*100..<colnum*100+ROW {
+            print(i)
+            currentCellChange(opeType: ContentView.Operation.none, value: "0", initialFlag: true, cellID: i)
+        }
+        self.cellSelecter = colnum*100
+    }
     
+    
+    //アイコン
+    private func principalIcon() -> some View {
+        Image("NavBar")
+            .resizable()
+            .scaledToFill()
+            .frame(width: 100, height: 36)
+            
+    }
+    
+    //表示
+    private func dispCell(cell: Cell) -> String {
+        if cell.initialFlag {
+            return "\(cell.opeType.rawValue)"
+        }
+        return "\(cell.opeType.rawValue)"+cell.value
+    }
+    //Floatのフォーマット
+    private func formatF(f: Float) -> String {
+        if f.isFinite{
+            let i = Int(f)
+            if f == 0{
+                return "0"
+            }
+            else if f > Float(i) {
+                return String(f)
+            } else {
+                return String(i)
+            }
+        } else {    //inf,nan
+            return String(f)
+        }
+    }
+    //計算
+    private func calculate() {
+        for col in self.table {
+            var result: Float = 0
+            for c in col.cell {
+                switch c.opeType{
+                case .add:
+                    result = result + Float(c.value)!
+                case .subtract:
+                    result = result - Float(c.value)!
+                case .multiply:
+                    result = result * Float(c.value)!
+                case .divide:
+                    result = result / Float(c.value)!
+                case .none:
+                    result = result + Float(c.value)!
+                }
+            }
+            self.table[col.id].result = result
+            
+        }
+    }
     
     
     
