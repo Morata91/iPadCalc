@@ -72,7 +72,7 @@ struct ContentView: View {
     struct Cells: Identifiable, Hashable {
         let id: Int
         var cell: [Cell]
-        var result: Float = 0
+        var result: Double = 0
     }
     @State var table = (0..<COL).map { index in
         Cells(
@@ -135,12 +135,18 @@ struct ContentView: View {
                                                     HStack(
                                                         content: {
                                                         Spacer()
-                                                        Text(
-//                                                            String(column.result)
-                                                            formatF(f: column.result)
-                                                        )
-                                                        .frame(height: 40)
-                                                        }
+                                                            if column.result > 100000000000000 {
+                                                                Text("Error")
+                                                                    .frame(height: 40)
+                                                            } else {
+                                                                Text(
+        //                                                            String(column.result)
+                                                                    formatF(f: column.result)
+                                                                )
+                                                                .frame(height: 40)
+                                                                }
+                                                            }
+                                                        
                                                     )
                                                     .background(Color.white)
                                                     .frame(maxWidth: 200)
@@ -152,7 +158,8 @@ struct ContentView: View {
     //                                                            Text(String(c.opeType.rawValue)+"\t\t"+String(c.value))
                                                                 Text(dispCell(cell: c))
                                                             }
-                                                            .frame(minHeight: 30)
+                                                            .frame(height: 30)
+                                                            
                                                         }
                                                     }
                                                     .listStyle(.plain)
@@ -175,6 +182,7 @@ struct ContentView: View {
                                 }
                             )
                             .frame(maxHeight: /*@START_MENU_TOKEN@*/.infinity/*@END_MENU_TOKEN@*/)
+                            
                                 
                             //ボタン領域
                             VStack {
@@ -200,7 +208,9 @@ struct ContentView: View {
                             .buttonStyle(BorderedRoundedButtonStyle())
                         }
                     )
+                    
                     .navigationBarTitleDisplayMode(.inline)
+                    
 //                    .navigationBarTitle("kkk")
                     .toolbar {
                         ToolbarItem(placement: .principal, content: {principalIcon()})
@@ -209,6 +219,7 @@ struct ContentView: View {
                     
                 }
             )
+            .navigationSplitViewStyle(.prominentDetail)
 //            .border(Color.red, width: 10)
             .onChange(of: cellSelecter) { oldState, newState in
                 changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
@@ -334,11 +345,12 @@ struct ContentView: View {
                 if self.input.value == "0" {
                     changeInput(value: number)
                 }
-                else {
+                else  if self.input.value.count < 12{
                     changeInput(value: "\(self.input.value)\(number)")
+                } else {
+                    break
                 }
                 currentCellChange(value: self.input.value, initialFlag: false)
-                
                 
                 
             }
@@ -353,7 +365,6 @@ struct ContentView: View {
             if self.table[colSelecter].cell.firstIndex(where: {$0.id == cellSelecter + 1}) != nil {
                 //cellSelecter+=1できるならば
                 self.cellSelecter = cellSelecter + 1
-                print("カウントアｐｐ")
                 if change {
                     
                 }
@@ -407,7 +418,6 @@ struct ContentView: View {
     //AC
     private func allClear(colnum: Int) {
         for i in colnum*100..<colnum*100+ROW {
-            print(i)
             currentCellChange(opeType: ContentView.Operation.none, value: "0", initialFlag: true, cellID: i)
         }
         self.cellSelecter = colnum*100
@@ -428,40 +438,74 @@ struct ContentView: View {
         if cell.initialFlag {
             return "\(cell.opeType.rawValue)"
         }
-        return "\(cell.opeType.rawValue)"+formatF(f:Float(cell.value)!)
+        let d = Double(cell.value)!
+        return "\(cell.opeType.rawValue)"+formatF(f:d)
     }
-    //Floatのフォーマット
-    private func formatF(f: Float) -> String {
+    //Doubleのフォーマット
+    private func formatF(f: Double) -> String {
+        print(f)
+        
         if f.isFinite{
             let i = Int(f)
             if f == 0{
                 return "0"
             }
-            else if f > Float(i) { //小数
+            else if f > Double(i) { //小数
                 return String(f)
             } else {    //整数
-                return String.localizedStringWithFormat("%d", i)
+//                return String.localizedStringWithFormat("%d", i)//修正
+                return addComma(i:  i)
+//                return String(i)
             }
         } else {    //inf,nan
             return String(f)
         }
     }
+    private func addComma(i: Int) -> String{
+        var num = i
+        let i0, i1, i2, i3, i4: Int
+        var str: String = ""
+        i0 = num % 1000
+        str = String(i0)
+        num = num / 1000
+        if num > 0 {
+            i1 = num % 1000
+            str = String(i1) + "," + String(format: "%03d", i0)
+            num = num / 1000
+            if num > 0 {
+                i2 = num % 1000
+                str = String(i2) + "," + String(format: "%03d", i1) + "," + String(format: "%03d", i0)
+                num = num / 1000
+                if num > 0 {
+                    i3 = num % 1000
+                    str = String(i3) + "," + String(format: "%03d", i2) + "," + String(format: "%03d", i1) + "," + String(format: "%03d", i0)
+                    num = num / 1000
+                    if num > 0 {
+                        i4 = num % 1000
+                        str = String(i4) + "," + String(format: "%03d", i3) + "," + String(format: "%03d", i2) + "," + String(format: "%03d", i1) + "," + String(format: "%03d", i0)
+                        num = num / 1000
+                    }
+                }
+            }
+        }
+        return str
+    }
     //計算
     private func calculate() {
         for col in self.table {
-            var result: Float = 0
+            var result: Double = 0
             for c in col.cell {
                 switch c.opeType{
                 case .add:
-                    result = result + Float(c.value)!
+                    result = result + Double(c.value)!
                 case .subtract:
-                    result = result - Float(c.value)!
+                    result = result - Double(c.value)!
                 case .multiply:
-                    result = result * Float(c.value)!
+                    result = result * Double(c.value)!
                 case .divide:
-                    result = result / Float(c.value)!
+                    result = result / Double(c.value)!
                 case .none:
-                    result = result + Float(c.value)!
+                    result = result + Double(c.value)!
                 }
             }
             self.table[col.id].result = result
