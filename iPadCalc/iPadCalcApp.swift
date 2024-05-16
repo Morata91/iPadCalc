@@ -27,6 +27,11 @@ struct iPadCalcApp: App {
         WindowGroup {
             ContentView()
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(for: TableHistory.self)
+    }
+    
+    //アプリが起動した時（？）
+    init() {
+        print(URL.applicationSupportDirectory.path(percentEncoded: false))
     }
 }

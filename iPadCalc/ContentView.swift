@@ -5,14 +5,85 @@
 //  Created by 村田航希 on 2024/05/13.
 //
 //つぎやる
-//AC
 //UIをもうちょいマシに
 
 import SwiftUI
 import SwiftData
 
-let ROW = 12  // ROWの値を修正
+let ROW = 17  // ROWの値を修正
 let COL = 4  // `Cells`の数
+
+//演算タイプ
+enum Operation: String {
+    case add = "+"
+    case subtract = "-"
+    case multiply = "×"
+    case divide = "÷"
+    case none = ""
+}
+
+
+//セルの定義と初期化
+struct Cell: Identifiable, Hashable {
+    let id: Int
+    var opeType: Operation = .none
+    var value: String = "0"
+    var initialFlag: Bool = true
+}
+struct Cells: Identifiable, Hashable {
+    let id: Int
+    var cell: [Cell]
+    var result: Double = 0
+}
+
+@Model
+class TableHistory {
+    var title: String
+    var dateAdded: Date
+    var dateUpdated: Date
+    var cellsKey: Int
+    
+    init(title: String, dateAdded: Date, dateUpdated: Date, cellsKey: Int) {
+        self.title = title
+        self.dateAdded = dateAdded
+        self.dateUpdated = dateUpdated
+        self.cellsKey = cellsKey
+    }
+}
+
+@Model
+class CellsHistory {
+    var key: Int
+    var cellkey0: Int?
+    var cellkey1: Int?
+    var cellkey2: Int?
+    var cellkey3: Int?
+    
+    init(key: Int, cellkey0: Int? = nil, cellkey1: Int? = nil, cellkey2: Int? = nil, cellkey3: Int? = nil) {
+        self.key = key
+        self.cellkey0 = cellkey0
+        self.cellkey1 = cellkey1
+        self.cellkey2 = cellkey2
+        self.cellkey3 = cellkey3
+    }
+}
+
+@Model
+class cellHistory {
+    var key: Int
+    var id: Int
+    var opeTypeKey: Int
+    var value: String = "0"
+    var initialFlag: Bool = true
+    
+    init(key: Int, id: Int, opeTypeKey: Int, value: String, initialFlag: Bool) {
+        self.key = key
+        self.id = id
+        self.opeTypeKey = opeTypeKey
+        self.value = value
+        self.initialFlag = initialFlag
+    }
+}
 
 
 
@@ -22,6 +93,9 @@ struct ContentView: View {
     
     //NavigationSplitViewが開いてるかどうかの状態を表す変数
     @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
+    
+    //右上のテキストフィールド
+    @State var inputName = ""
      
     //ボタン
     private enum CalcButton: String {
@@ -53,27 +127,8 @@ struct ContentView: View {
             [.decimal, .subtract, .multiply],
             [.clear, .equal, .divide]
         ]
-    //演算タイプ
-    enum Operation: String {
-        case add = "+"
-        case subtract = "-"
-        case multiply = "×"
-        case divide = "÷"
-        case none = ""
-    }
+       
     
-    //セルの定義と初期化
-    struct Cell: Identifiable, Hashable {
-        let id: Int
-        var opeType: Operation = .none
-        var value: String = "0"
-        var initialFlag: Bool = true
-    }
-    struct Cells: Identifiable, Hashable {
-        let id: Int
-        var cell: [Cell]
-        var result: Double = 0
-    }
     @State var table = (0..<COL).map { index in
         Cells(
             id: index,
@@ -214,6 +269,12 @@ struct ContentView: View {
 //                    .navigationBarTitle("kkk")
                     .toolbar {
                         ToolbarItem(placement: .principal, content: {principalIcon()})
+                        ToolbarItem(placement: .topBarTrailing, content: {
+                            VStack {
+                                Text(Date.now, format: Date.FormatStyle(date: .numeric, time: .omitted))
+                                TextField("担当者", text: $inputName)
+                            }
+                        })
                     }
 //                    .toolbar(Visibility.hidden, for: .navigationBar)
                     
@@ -222,7 +283,7 @@ struct ContentView: View {
             .navigationSplitViewStyle(.prominentDetail)
 //            .border(Color.red, width: 10)
             .onChange(of: cellSelecter) { oldState, newState in
-                changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
+                changeInput(value: "0", currentOperation: Operation.none, ableDecimal: true, nilValue: true)
                 let colSelecter = (oldState ?? 400) / 100  //選択されているセルの列を取得。none->4
                 if colSelecter != 4 {
                     if let index = self.table[colSelecter].cell.firstIndex(where: {$0.id == oldState}) {
@@ -309,12 +370,12 @@ struct ContentView: View {
             case .equal:
                 doCalc = true
                 
-                changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
+                changeInput(value: "0", currentOperation: Operation.none, ableDecimal: true, nilValue: true)
                 upCountCellSelecter(change: false)
                 
             case .clear:
-                changeInput(value: "0", currentOperation: ContentView.Operation.none, ableDecimal: true, nilValue: true)
-                currentCellChange(opeType: ContentView.Operation.none, value: "0", initialFlag: true)
+                changeInput(value: "0", currentOperation: Operation.none, ableDecimal: true, nilValue: true)
+                currentCellChange(opeType: Operation.none, value: "0", initialFlag: true)
                 calculate()
             case .decimal:
                 doCalc = true
@@ -418,20 +479,13 @@ struct ContentView: View {
     //AC
     private func allClear(colnum: Int) {
         for i in colnum*100..<colnum*100+ROW {
-            currentCellChange(opeType: ContentView.Operation.none, value: "0", initialFlag: true, cellID: i)
+            currentCellChange(opeType: Operation.none, value: "0", initialFlag: true, cellID: i)
         }
         self.cellSelecter = colnum*100
     }
     
     
-    //アイコン
-    private func principalIcon() -> some View {
-        Image("NavBar")
-            .resizable()
-            .scaledToFill()
-            .frame(width: 100, height: 36)
-            
-    }
+    
     
     //表示
     private func dispCell(cell: Cell) -> String {
@@ -511,6 +565,18 @@ struct ContentView: View {
             self.table[col.id].result = result
             
         }
+    }
+    
+    
+    
+    
+    //NavigationBarのアイコン
+    private func principalIcon() -> some View {
+        Image("NavBar")
+            .resizable()
+            .scaledToFill()
+            .frame(width: 140)
+            
     }
     
     
