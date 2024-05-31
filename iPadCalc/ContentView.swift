@@ -14,7 +14,7 @@ let ROW = 17  // ROWの値を修正
 let COL = 4  // `Cells`の数
 
 //演算タイプ
-enum Operation: String {
+enum Operation: String, Codable {
     case add = "+"
     case subtract = "-"
     case multiply = "×"
@@ -24,13 +24,13 @@ enum Operation: String {
 
 
 //セルの定義と初期化
-struct Cell: Identifiable, Hashable {
+struct Cell: Identifiable, Hashable, Codable {
     let id: Int
     var opeType: Operation = .none
     var value: String = "0"
     var initialFlag: Bool = true
 }
-struct Cells: Identifiable, Hashable {
+struct Cells: Identifiable, Hashable, Codable {
     let id: Int
     var cell: [Cell]
     var result: Double = 0
@@ -41,55 +41,24 @@ class TableHistory {
     var title: String
     var dateAdded: Date
     var dateUpdated: Date
-    var cellsKey: Int
+    var cells: [Cells]
     
-    init(title: String, dateAdded: Date, dateUpdated: Date, cellsKey: Int) {
+    init(title: String, dateAdded: Date, dateUpdated: Date, cells: [Cells]) {
         self.title = title
         self.dateAdded = dateAdded
         self.dateUpdated = dateUpdated
-        self.cellsKey = cellsKey
+        self.cells = cells
     }
 }
 
-@Model
-class CellsHistory {
-    var key: Int
-    var cellkey0: Int?
-    var cellkey1: Int?
-    var cellkey2: Int?
-    var cellkey3: Int?
-    
-    init(key: Int, cellkey0: Int? = nil, cellkey1: Int? = nil, cellkey2: Int? = nil, cellkey3: Int? = nil) {
-        self.key = key
-        self.cellkey0 = cellkey0
-        self.cellkey1 = cellkey1
-        self.cellkey2 = cellkey2
-        self.cellkey3 = cellkey3
-    }
-}
 
-@Model
-class cellHistory {
-    var key: Int
-    var id: Int
-    var opeTypeKey: Int
-    var value: String = "0"
-    var initialFlag: Bool = true
-    
-    init(key: Int, id: Int, opeTypeKey: Int, value: String, initialFlag: Bool) {
-        self.key = key
-        self.id = id
-        self.opeTypeKey = opeTypeKey
-        self.value = value
-        self.initialFlag = initialFlag
-    }
-}
 
 
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
+    @Query private var tables: [TableHistory]
     
     //NavigationSplitViewが開いてるかどうかの状態を表す変数
     @State private var columnVisibility = NavigationSplitViewVisibility.detailOnly
